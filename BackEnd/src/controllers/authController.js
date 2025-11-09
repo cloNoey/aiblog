@@ -1,5 +1,6 @@
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken, getTokenExpiry } = require('../utils/tokenUtils')
 const { tokenStore } = require('../services/tokenService')
+const { sendUnauthorized, sendBadRequest, handleError } = require('../utils/errorHandler')
 const { add } = require('date-fns')
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
@@ -11,11 +12,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
 const githubCallback = (req, res) => {
   try {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: 'Authentication failed',
-      })
-      return
+      return sendUnauthorized(res, 'Authentication failed')
     }
 
     const user = req.user
@@ -45,11 +42,7 @@ const githubCallback = (req, res) => {
 
     res.redirect(redirectUrl.toString())
   } catch (error) {
-    console.error('GitHub callback error:', error)
-    res.status(500).json({
-      success: false,
-      message: 'Authentication error',
-    })
+    return handleError(error, res, 'Authentication error', 500)
   }
 }
 
@@ -62,33 +55,21 @@ const refreshTokenHandler = (req, res) => {
     const { refreshToken: token } = req.body
 
     if (!token) {
-      res.status(400).json({
-        success: false,
-        message: 'Refresh token is required',
-      })
-      return
+      return sendBadRequest(res, 'Refresh token is required')
     }
 
     // 리프레시 토큰 검증
     const decoded = verifyRefreshToken(token)
 
     if (!decoded) {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid or expired refresh token',
-      })
-      return
+      return sendUnauthorized(res, 'Invalid or expired refresh token')
     }
 
     // 저장된 리프레시 토큰 확인
     const tokenData = tokenStore.getRefreshToken(token)
 
     if (!tokenData) {
-      res.status(401).json({
-        success: false,
-        message: 'Refresh token not found',
-      })
-      return
+      return sendUnauthorized(res, 'Refresh token not found')
     }
 
     // 새 액세스 토큰 생성
@@ -109,11 +90,7 @@ const refreshTokenHandler = (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Token refresh error:', error)
-    res.status(500).json({
-      success: false,
-      message: 'Token refresh error',
-    })
+    return handleError(error, res, 'Token refresh error', 500)
   }
 }
 
@@ -139,11 +116,7 @@ const logout = (req, res) => {
       message: 'Logged out successfully',
     })
   } catch (error) {
-    console.error('Logout error:', error)
-    res.status(500).json({
-      success: false,
-      message: 'Logout error',
-    })
+    return handleError(error, res, 'Logout error', 500)
   }
 }
 
@@ -153,11 +126,7 @@ const logout = (req, res) => {
 const getCurrentUser = (req, res) => {
   try {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: 'Not authenticated',
-      })
-      return
+      return sendUnauthorized(res, 'Not authenticated')
     }
 
     res.json({
@@ -165,11 +134,7 @@ const getCurrentUser = (req, res) => {
       data: req.user,
     })
   } catch (error) {
-    console.error('Get current user error:', error)
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching user information',
-    })
+    return handleError(error, res, 'Error fetching user information', 500)
   }
 }
 

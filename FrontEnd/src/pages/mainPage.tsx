@@ -1,130 +1,64 @@
-import { useState, useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import LoginButton from '@/components/LoginButton'
 import SearchBar from '@/components/SearchBar'
 import List from '@/components/List'
-import type { CommitData, PullRequestData } from '@/components/List'
-import { getRepositories, getCommits, getPullRequests} from '@/services/githubApi'
-
-interface Repository {
-  id: string
-  name: string
-  owner: string
-  private?: boolean
-}
+import { useAuth } from '@/hooks/useAuth'
+import { useRepository } from '@/hooks/useRepository'
+import { useFetchData } from '@/hooks/useFetchData'
+import { AUTH_GITHUB_URL } from '@/utils/constants'
 
 export default function MainPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [selectedRepository, setSelectedRepository] = useState(false)
-  const [repositoryName, setRepositoryName] = useState<string>('')
-  const [repositoryOwner, setRepositoryOwner] = useState<string>('')
-  const [repositories, setRepositories] = useState<Repository[]>([])
-  const [commits, setCommits] = useState<CommitData[]>([])
-  const [pullRequests, setPullRequests] = useState<PullRequestData[]>([])
-  const [loading, setLoading] = useState(false)
   const resetSearchRef = useRef<(() => void) | null>(null)
 
-  // GitHub OAuth 콜백 처리
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const accessToken = params.get('accessToken')
-    const refreshToken = params.get('refreshToken')
-    const githubAccessToken = params.get('githubAccessToken')
+  // Auth hook
+  const { isAuthenticated, logout } = useAuth()
 
-    if (accessToken && refreshToken) {
-      localStorage.setItem('accessToken', accessToken)
-      localStorage.setItem('refreshToken', refreshToken)
-      if (githubAccessToken) {
-        localStorage.setItem('githubToken', githubAccessToken)
-      }
-      setIsAuthenticated(true)
-      window.history.replaceState({}, document.title, window.location.pathname)
-    } else {
-      const savedToken = localStorage.getItem('accessToken')
-      const savedGithubToken = localStorage.getItem('githubToken')
-      if (savedToken && savedGithubToken) {
-        setIsAuthenticated(true)
-      }
-    }
-  }, [])
+  // Repository hook
+  const {
+    selectedRepository,
+    repositoryName,
+    repositoryOwner,
+    repositories,
+    commits,
+    pullRequests,
+    loading,
+    setRepositories,
+    setCommits,
+    setPullRequests,
+    setLoading,
+    selectRepository,
+    resetRepository,
+    clearRepositories,
+  } = useRepository()
 
-  // 레포지토리 목록 조회
-  useEffect(() => {
-    if (isAuthenticated && repositories.length === 0) {
-      fetchRepositories()
-    }
-  }, [isAuthenticated])
-
-
-  // 레포지토리 선택 시 커밋과 PR 조회
-  useEffect(() => {
-    if (isAuthenticated && selectedRepository && repositoryName && repositoryOwner) {
-      fetchCommitsAndPRs()
-    }
-  }, [selectedRepository, repositoryName, repositoryOwner, isAuthenticated])
-
-  const fetchRepositories = async () => {
-    try {
-      setLoading(true)
-      const data = await getRepositories()
-      setRepositories(data)
-    } catch (err) {
-      console.error('Failed to fetch repositories:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchCommitsAndPRs = async () => {
-    try {
-      setLoading(true)
-
-      if (!repositoryName || !repositoryOwner) {
-        return
-      }
-
-      const commitsData = await getCommits(repositoryOwner, repositoryName)
-      const prsData = await getPullRequests(repositoryOwner, repositoryName)
-
-      setCommits(commitsData)
-      setPullRequests(prsData)
-    } catch (err) {
-      console.error('Failed to fetch commits and PRs:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // Fetch data hook
+  useFetchData({
+    isAuthenticated,
+    repositoriesLength: repositories.length,
+    selectedRepository,
+    repositoryName,
+    repositoryOwner,
+    setRepositories,
+    setCommits,
+    setPullRequests,
+    setLoading,
+  })
 
   const handleAuthClick = () => {
     if (isAuthenticated) {
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
-      localStorage.removeItem('githubToken')
-      setIsAuthenticated(false)
-      setRepositories([])
-      setCommits([])
-      setPullRequests([])
-      setSelectedRepository(false)
-      setRepositoryName('')
-      setRepositoryOwner('')
+      logout()
+      clearRepositories()
     } else {
-      window.location.href = 'http://localhost:8000/api/auth/github'
+      window.location.href = AUTH_GITHUB_URL
     }
   }
 
-  const handleSearch = (repository: Repository) => {
-    setRepositoryName(repository.name)
-    setRepositoryOwner(repository.owner)
-    setSelectedRepository(true)
+  const handleSearch = (repository: any) => {
+    selectRepository(repository)
   }
 
   const handleReset = () => {
-    setCommits([])
-    setPullRequests([])
-    setSelectedRepository(false)
-    setRepositoryName('')
-    setRepositoryOwner('')
-    // 검색어도 초기화
+    resetRepository()
     if (resetSearchRef.current) {
       resetSearchRef.current()
     }

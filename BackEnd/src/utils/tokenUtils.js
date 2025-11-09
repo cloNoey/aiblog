@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken')
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
-const JWT_EXPIRE_IN = process.env.JWT_EXPIRE_IN || '7d'
-const JWT_REFRESH_EXPIRE_IN = process.env.JWT_REFRESH_EXPIRE_IN || '30d'
+const JWT_SECRET = process.env.JWT_SECRET
+const JWT_EXPIRE_IN = process.env.JWT_EXPIRE_IN
+const JWT_REFRESH_EXPIRE_IN = process.env.JWT_REFRESH_EXPIRE_IN
 
 /**
  * 액세스 토큰 생성
@@ -63,10 +63,23 @@ const getTokenExpiry = (token) => {
   }
 }
 
+/**
+ * Authorization 헤더에서 Bearer 토큰 추출
+ * @param {string} authHeader - Authorization 헤더 값
+ * @returns {string|null} 추출된 토큰 또는 null
+ */
+const extractBearerToken = (authHeader) => {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null
+  }
+  return authHeader.substring(7)
+}
+
 module.exports = {
   generateAccessToken,
   generateRefreshToken,
   verifyToken,
   verifyRefreshToken,
   getTokenExpiry,
+  extractBearerToken,
 }
