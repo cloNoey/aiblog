@@ -94,7 +94,7 @@ const getCommits = async (req, res) => {
       const response = await makeGitHubRequest(octokit, 'GET /repos/{owner}/{repo}/commits', {
         owner,
         repo,
-        per_page: 10,
+        per_page: 100,
       })
 
       // 응답 데이터 형식 변환
@@ -143,7 +143,7 @@ const getPullRequests = async (req, res) => {
         owner,
         repo,
         state: 'all',
-        per_page: 10,
+        per_page: 100,
         sort: 'updated',
         direction: 'desc',
       })
