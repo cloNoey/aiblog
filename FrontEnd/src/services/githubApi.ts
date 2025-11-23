@@ -45,7 +45,6 @@ export const getCurrentUser = async (): Promise<User | null> => {
     const response = await apiClient.get<ApiResponse<User>>('/auth/me')
     return response.data.data || null
   } catch (error) {
-    console.error('Failed to fetch current user:', error)
     return null
   }
 }
@@ -58,13 +57,13 @@ export const getRepositories = async (): Promise<Repository[]> => {
     const response = await apiClient.get<ApiResponse<Repository[]>>('/github/repositories')
     return response.data.data || []
   } catch (error) {
-    console.error('Failed to fetch repositories:', error)
     throw error
   }
 }
 
 /**
  * 저장소의 커밋 목록 조회
+ * 커밋이 없는 레포는 빈 배열을 반환 (에러 아님)
  */
 export const getCommits = async (owner: string, repo: string): Promise<Commit[]> => {
   try {
@@ -76,13 +75,15 @@ export const getCommits = async (owner: string, repo: string): Promise<Commit[]>
     })
     return response.data.data || []
   } catch (error) {
-    console.error('Failed to fetch commits:', error)
-    throw error
+    // 커밋이 없는 경우는 정상이므로 빈 배열 반환
+    // 실제 에러(401, 403, 404 등)는 api.ts의 인터셉터에서 처리됨
+    return []
   }
 }
 
 /**
  * 저장소의 Pull Requests 목록 조회
+ * PR이 없는 레포는 빈 배열을 반환 (에러 아님)
  */
 export const getPullRequests = async (owner: string, repo: string): Promise<PullRequest[]> => {
   try {
@@ -94,7 +95,8 @@ export const getPullRequests = async (owner: string, repo: string): Promise<Pull
     })
     return response.data.data || []
   } catch (error) {
-    console.error('Failed to fetch pull requests:', error)
-    throw error
+    // PR이 없는 경우는 정상이므로 빈 배열 반환
+    // 실제 에러(401, 403, 404 등)는 api.ts의 인터셉터에서 처리됨
+    return []
   }
 }
