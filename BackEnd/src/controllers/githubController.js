@@ -113,6 +113,13 @@ const getCommits = async (req, res) => {
         data: commits,
       })
     } catch (apiError) {
+      // 커밋이 없는 경우(204, 빈 배열, 또는 특정 에러)는 정상으로 처리
+      if (apiError.status === 204 || apiError.status === 404) {
+        return res.json({
+          success: true,
+          data: [],
+        })
+      }
       return handleGitHubError(apiError, res, 'Get commits')
     }
   } catch (error) {
@@ -164,6 +171,13 @@ const getPullRequests = async (req, res) => {
         data: pullRequests,
       })
     } catch (apiError) {
+      // PR이 없는 경우(204, 빈 배열, 또는 특정 에러)는 정상으로 처리
+      if (apiError.status === 204 || apiError.status === 404) {
+        return res.json({
+          success: true,
+          data: [],
+        })
+      }
       return handleGitHubError(apiError, res, 'Get pull requests')
     }
   } catch (error) {
