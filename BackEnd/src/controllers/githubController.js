@@ -105,6 +105,14 @@ const getCommits = async (req, res) => {
         per_page: GITHUB_PER_PAGE,
       })
 
+      // 응답이 없거나 빈 배열인 경우 처리
+      if (!response || !response.data || response.data.length === 0) {
+        return res.json({
+          success: true,
+          data: [],
+        })
+      }
+
       // 응답 데이터 형식 변환
       const commits = transformCommits(response.data)
 
@@ -114,7 +122,8 @@ const getCommits = async (req, res) => {
       })
     } catch (apiError) {
       // 커밋이 없는 경우(204, 빈 배열, 또는 특정 에러)는 정상으로 처리
-      if (apiError.status === 204 || apiError.status === 404) {
+      if (apiError.status === 204 || apiError.status === 404 ||
+          (apiError.response && apiError.response.status === 409)) {
         return res.json({
           success: true,
           data: [],
@@ -163,6 +172,14 @@ const getPullRequests = async (req, res) => {
         direction: 'desc',
       })
 
+      // 응답이 없거나 빈 배열인 경우 처리
+      if (!response || !response.data || response.data.length === 0) {
+        return res.json({
+          success: true,
+          data: [],
+        })
+      }
+
       // 응답 데이터 형식 변환
       const pullRequests = transformPullRequests(response.data)
 
@@ -172,7 +189,8 @@ const getPullRequests = async (req, res) => {
       })
     } catch (apiError) {
       // PR이 없는 경우(204, 빈 배열, 또는 특정 에러)는 정상으로 처리
-      if (apiError.status === 204 || apiError.status === 404) {
+      if (apiError.status === 204 || apiError.status === 404 ||
+          (apiError.response && apiError.response.status === 409)) {
         return res.json({
           success: true,
           data: [],
